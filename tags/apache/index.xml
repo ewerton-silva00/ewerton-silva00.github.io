@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>apache on Ewerton Silva</title>
+    <link>/tags/apache/</link>
+    <description>Recent content in apache on Ewerton Silva</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>pt-BR</language>
+    <copyright>©2020 Ewerton Silva.</copyright>
+    <lastBuildDate>Tue, 11 Feb 2020 16:47:41 -0300</lastBuildDate>
+    
+        <atom:link href="/tags/apache/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Apache HTTP Server como proxy reverso para o Proxmox VE</title>
+      <link>/post/reverse-proxy-proxmox/</link>
+      <pubDate>Tue, 11 Feb 2020 16:47:41 -0300</pubDate>
+      
+      <guid>/post/reverse-proxy-proxmox/</guid>
+      <description>Quem me conhece sabe que gosto demais do Proxmox Virtual Environment (PVE para os íntimos), porque ele proporciona uma plataforma completa de virtualização de máquinas virtuais de forma simples, robusta e OpenSource, garantindo inclusive suporte para uma arquitetura de Virtualização Hiperconvergente. Clique aqui para saber mais sobre PVE.
+Atualmente não o utilizo em produção, apenas em ambiente de estudos. Quem me dera, hein, brincar com esse cara em produção.
+Conforme o título desse artigo, o meu objetivo é mostrar como configurar um proxy reverso afim de evitar ficar acessando o dashboard do Proxmox via IP + Porta ou Hostname + Porta.</description>
+    </item>
+    
+  </channel>
+</rss>
