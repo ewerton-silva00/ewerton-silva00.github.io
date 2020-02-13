@@ -7,10 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>pt-BR</language>
     <copyright>©2020 Ewerton Silva.</copyright>
-    <lastBuildDate>Tue, 11 Feb 2020 16:47:41 -0300</lastBuildDate>
+    <lastBuildDate>Wed, 12 Feb 2020 12:41:18 -0300</lastBuildDate>
     
         <atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Criando sua própria Vagrant Box para o VirtualBox</title>
+      <link>/post/vagrant-box-customized/</link>
+      <pubDate>Wed, 12 Feb 2020 12:41:18 -0300</pubDate>
+      
+      <guid>/post/vagrant-box-customized/</guid>
+      <description>Vagrant e VirtualBox, nunca vi tecnologias ser tão amadas, mas também tão odiadas ao mesmo tempo. Falo isso, porque sou &amp;ldquo;rato&amp;rdquo; de blog técnico, gosto demais de ficar lendo os artigos que a turma publica e isso me fez perceber que o pessoal reclama muito do Vagrant e do VirtualBox, o primeiro por ser uma tecnologia de provisionamento de máquinas virtuais, sendo que o hype é containers, infraestrutura imutável e afins e o segundo, porque apresenta muitos problemas até em ambientes de estudos.</description>
+    </item>
     
     <item>
       <title>Apache HTTP Server como proxy reverso para o Proxmox VE</title>

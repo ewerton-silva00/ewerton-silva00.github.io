@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>vagrant on Ewerton Silva</title>
+    <link>/tags/vagrant/</link>
+    <description>Recent content in vagrant on Ewerton Silva</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>pt-BR</language>
+    <copyright>©2020 Ewerton Silva.</copyright>
+    <lastBuildDate>Wed, 12 Feb 2020 12:41:18 -0300</lastBuildDate>
+    
+        <atom:link href="/tags/vagrant/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Criando sua própria Vagrant Box para o VirtualBox</title>
+      <link>/post/vagrant-box-customized/</link>
+      <pubDate>Wed, 12 Feb 2020 12:41:18 -0300</pubDate>
+      
+      <guid>/post/vagrant-box-customized/</guid>
+      <description>Vagrant e VirtualBox, nunca vi tecnologias ser tão amadas, mas também tão odiadas ao mesmo tempo. Falo isso, porque sou &amp;ldquo;rato&amp;rdquo; de blog técnico, gosto demais de ficar lendo os artigos que a turma publica e isso me fez perceber que o pessoal reclama muito do Vagrant e do VirtualBox, o primeiro por ser uma tecnologia de provisionamento de máquinas virtuais, sendo que o hype é containers, infraestrutura imutável e afins e o segundo, porque apresenta muitos problemas até em ambientes de estudos.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.64.1" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Criando sua própria Vagrant Box para o VirtualBox&nbsp;&ndash;&nbsp;Ewerton Silva</title><link rel="stylesheet" href="/css/core.min.3a6a7ee40924e66a058442d11843d6fbb5cb58f03e94fdd9991fed82c0f7abc3a41a2443ab9b4b0d27feb2dc16a98e81.css" integrity="sha384-Omp&#43;5Akk5moFhELRGEPW&#43;7XLWPA&#43;lP3ZmR/tgsD3q8OkGiRDq5tLDSf&#43;stwWqY6B"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Ewerton Silva</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Feito por um SysAdmin Linux</span></div></section><div id="content"><section class="article header">
+    <h1 class="article title">Criando sua própria Vagrant Box para o VirtualBox</h1><p class="article date">Wednesday, February 12, 2020</p></section><article class="article markdown-body"><p><a href="https://www.vagrantup.com/"title="Link de acesso ao site oficial do Vagrant"target="_blank">Vagrant</a> e <a href="https://www.virtualbox.org/"title="Link de acesso ao site oficial do VirtualBox"target="_blank">VirtualBox</a>, nunca vi tecnologias ser tão amadas, mas também tão odiadas ao mesmo tempo. Falo isso, porque sou &ldquo;rato&rdquo; de blog técnico, gosto demais de ficar lendo os artigos que a turma publica e isso me fez perceber que o pessoal reclama muito do Vagrant e do VirtualBox, o primeiro por ser uma tecnologia de provisionamento de máquinas virtuais, sendo que o hype é containers, infraestrutura imutável e afins e o segundo, porque apresenta muitos problemas até em ambientes de estudos.</p>
+<p>Confesso que gosto das duas tecnologias, porque me ajudaram demais nos meus LABs. Coleciono muitas histórias felizes com ambos.</p>
+<p>Agora, porque personalizar uma Vagrant Box se posso simplesmente utilizar as boxes prontas disponíveis no <a href="https://app.vagrantup.com/boxes/search"title="Link de acesso ao repositório oficial de imagens do Vagrant"target="_blank">Vagrant Cloud</a>? Minha resposta é <strong>controle</strong>.</p>
+<p>Quando crio minha própria Box consigo ter controle sobre quase tudo. Isso me proporciona uma maior segurança.</p>
+<p>Para este artigo utilizei o seguinte:</p>
+<ul>
+<li>VirtualBox 6.0.16</li>
+<li>Vagrant 2.2.6</li>
+<li>CentOS 7.7.1908 (CentOS-7-x86_64-Minimal-1908.iso)</li>
+</ul>
+<p>Vou iniciar passando logo um &ldquo;pulo do gato&rdquo; que é criar uma interface virtual no VirtualBox para termos comunicação direta com as VMs do Vagrant. Isso ajuda demais, porque não gosto de ficar mapeando portas quando posso ter acesso direto. Think about it!</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-vagrant-box-customized.png"
+        alt="Imagem 00"/></a></span><span class="caption"><span class="title">Interface vboxnet0 criada</span></span></span></p>
+<p>Nesse caso, criei uma interface virtual chamada <strong>vboxnet0</strong> com IP <strong>10.10.10.1/24</strong>, ou seja, quando eu provisionar qualquer VM no meu notebook dentro dessa faixa de rede terei acesso direto. Bom demais!</p>
+<h4 id="criando-uma-máquina-virtual-no-virtualbox-">Criando uma máquina virtual no VirtualBox</h4>
+<p>Aqui, criaremos uma máquina virtual mais crua possível para no final converter numa Vagrant Box.</p>
+<p><strong>Passo 00:</strong> Atribuo um nome para a minha VM.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-vagrant-box-customized.png"
+        alt="Imagem 01"/></a></span><span class="caption"><span class="title">Atribuindo um nome para a VM</span></span></span></p>
+<p><strong>Passo 01:</strong> Deixo a memória RAM em 512 MB.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-vagrant-box-customized.png"
+        alt="Imagem 02"/></a></span><span class="caption"><span class="title">Memória RAM em 512 MB</span></span></span></p>
+<p><strong>Passo 02:</strong> Seleciono a opção <strong>Create a virtual hard disk now</strong>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/03-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/03-screenshot-vagrant-box-customized.png"
+        alt="Imagem 03"/></a></span><span class="caption"><span class="title">Opção Create a virtual hard disk now selecionada</span></span></span></p>
+<p><strong>Passo 03:</strong> Marco a opção <strong>VDI (VirtualBox Disk Image)</strong>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/04-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/04-screenshot-vagrant-box-customized.png"
+        alt="Imagem 04"/></a></span><span class="caption"><span class="title">Opçao VDI (VirtualBox Disk Image selecionada)</span></span></span></p>
+<p><strong>Passo 04</strong>: Seleciono a opção <strong>Dynamically allocated</strong>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/05-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/05-screenshot-vagrant-box-customized.png"
+        alt="Imagem 05"/></a></span><span class="caption"><span class="title">Opção Dynamically allocated selecionada</span></span></span></p>
+<p><strong>Passo 05:</strong> Aumento o tamanho do disco, de <strong>8,00 GB</strong> para <strong>10,00 GB</strong>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/06-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/06-screenshot-vagrant-box-customized.png"
+        alt="Imagem 06"/></a></span><span class="caption"><span class="title">Aumentei o disco de 8,00 GB para 10,00 GB</span></span></span></p>
+<p>Após clicar em <strong>Create</strong> a VM estará pronta para &ldquo;bootar&rdquo; a imagem do sistema operacional, mas antes disso preciso de mais alguns passos.</p>
+<p><strong>Passo 06:</strong> Desabilito a interface USB desmarcando a opção <strong>Enable USB Controller</strong>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/07-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/07-screenshot-vagrant-box-customized.png"
+        alt="Imagem 07"/></a></span><span class="caption"><span class="title">Desabilitar a interface USB desmarcando a opçao Enable USB Controller</span></span></span></p>
+<p><strong>Passo 07:</strong> Desabilito o áudio desmarcando a opção <strong>Enable Audio</strong>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/08-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/08-screenshot-vagrant-box-customized.png"
+        alt="imagem 08"/></a></span><span class="caption"><span class="title">Desabilitar o áudio desmarcando a opçao Enable Audio</span></span></span></p>
+<p><strong>Passo 08:</strong> Seleciono a ISO do CentOS que irei utilizar.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/09-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/09-screenshot-vagrant-box-customized.png"
+        alt="Imagem 09"/></a></span><span class="caption"><span class="title">ISO do CentOS selecionada para boot</span></span></span></p>
+<h4 id="instalação-do-sistema-operacional-">Instalação do Sistema Operacional</h4>
+<p>Após inicializar a VM, siga os passos convencionais de instalação, mas atenção para o particionamento do disco.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/10-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/10-screenshot-vagrant-box-customized.png"
+        alt="Imagem 10"/></a></span><span class="caption"><span class="title">Disco devidamente particionado</span></span></span></p>
+<p>Particionei da seguinte forma:</p>
+<ul>
+<li>
+<p>256MB para a partição <strong>/boot</strong>, com filesystem XFS;</p>
+</li>
+<li>
+<p>256MB para a <strong>swap</strong>, com filesystem XFS + LVM;</p>
+</li>
+<li>
+<p>O que sobrou aloquei na partição <strong>/ [raiz]</strong>, com filesystem XFS + LVM;</p>
+</li>
+</ul>
+<p>Utilizar LVM na <strong>swap</strong> e <strong>/ [raiz]</strong> nos permite futuramente aumentar o disco através do Vagrantfile. Mostro isso num próximo artigo.</p>
+<p>Concluo essa parte da seguinte forma:</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/11-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/11-screenshot-vagrant-box-customized.png"
+        alt="Imagem 11"/></a></span><span class="caption"><span class="title">Status do Installation Summary</span></span></span></p>
+<p>À seguir, chegamos nos passos de criar uma senha para o usuário <strong>root</strong> e criar um usuário à parte, na opção <strong>User Creation</strong>.</p>
+<p>Outro &ldquo;pulo do gato&rdquo; aqui é criar um usuário chamado <strong>vagrant</strong> com senha <strong>vagrant</strong> e permissão de <strong>Administrator</strong>. Ficando assim:</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/12-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/12-screenshot-vagrant-box-customized.png"
+        alt="Imagem 12"/></a></span><span class="caption"><span class="title">Usuário vagrant criado</span></span></span></p>
+<p>Feito isso é só aguardar a conclusão da instalação do sistema operacional.</p>
+<h4 id="preparando-a-vm-para-converter-numa-vagrant-box-">Preparando a VM para converter numa Vagrant Box</h4>
+<p>Certo. A VM concluiu a instalação do sistema operacional, reiniciou e já está online, pronta para darmos continuidade.</p>
+<p>Os passos à seguir podem ser feitos via interface gráfica do VirtualBox, mas irei fazer via command line mesmo, pois evito ter que ficar tirando screenshots. É bem massante.</p>
+<p>No terminal do meu notebook ao executar o comando <code>VBoxManage list runningvms</code> tenho como retorno a VM recém provisionada com estado <strong>running</strong>, ou seja, em execução.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="s2">&#34;CentOS-7-x86_64-Minimal-1908&#34;</span> <span class="o">{</span>81b71bb8-6163-4389-86ab-4957df85790a<span class="o">}</span>
+</code></pre></div><p>Paro a VM com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">VBoxManage controlvm CentOS-7-x86_64-Minimal-1908 poweroff
+</code></pre></div><p>Crio uma regra de NAT Port Forward para a interface NAT da VM permitindo o acesso via SSH.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">VBoxManage modifyvm <span class="s2">&#34;CentOS-7-x86_64-Minimal-1908&#34;</span> --natpf1 <span class="s2">&#34;guestssh,tcp,,2222,,22&#34;</span>
+</code></pre></div><p>Inicio a VM novamente com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">VBoxManage startvm <span class="s2">&#34;CentOS-7-x86_64-Minimal-1908&#34;</span> --type headless
+</code></pre></div><p>Agora estamos jogando em casa. SSH funcional.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">ssh -l root localhost -p <span class="m">2222</span>
+</code></pre></div><p>Já conectado, atualizo os pacotes instalados. Claro.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">yum update -y
+</code></pre></div><p>Faço a instalação do repositório EPEL (Extra Packages for Enterprise Linux), pois vou precisar desse cara para instalar o <strong>dkms</strong>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">yum install epel-release -y <span class="o">&amp;&amp;</span> yum clean metadata
+</code></pre></div><p>Preciso instalar o <strong>VBoxGuestAdditions</strong> na VM. Lembrando que precisa ser na mesma versão do VirtualBox. No meu caso, <strong>6.0.16</strong>.</p>
+<p>Como dependência, instalo os pacotes abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">yum install wget gcc kernel-devel kernel-headers dkms make bzip2 perl -y
+</code></pre></div><p>E agora sim baixo a ISO do <strong>VBoxGuestAdditions</strong>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">wget https://download.virtualbox.org/virtualbox/6.0.16/VBoxGuestAdditions_6.0.16.iso
+</code></pre></div><p>Crio um diretório temporário pra montar a ISO.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">mkdir /media/VBoxGuestAdditions
+</code></pre></div><p>Monto a ISO.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">mount -o loop,ro VBoxGuestAdditions_6.0.16.iso /media/VBoxGuestAdditions
+</code></pre></div><p>Exporto as duas variáveis de ambiente abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="nb">export</span> <span class="nv">KERN_DIR</span><span class="o">=</span>/usr/src/kernels/<span class="k">$(</span>uname -r<span class="k">)</span>
+<span class="nb">export</span> <span class="nv">MAKE</span><span class="o">=</span><span class="s2">&#34;/usr/bin/gmake -i&#34;</span>
+</code></pre></div><p>E agora sim posso instalar o VBoxGuestAdditions com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sh /media/VBoxGuestAdditions/VBoxLinuxAdditions.run --nox11
+</code></pre></div><p>O comando acima precisa de alguns minutos para concluir e o resultado da execução é a seguinte:</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost ~<span class="o">]</span><span class="c1"># sh /media/VBoxGuestAdditions/VBoxLinuxAdditions.run --nox11</span>
+Verifying archive integrity... All good.
+Uncompressing VirtualBox 6.0.16 Guest Additions <span class="k">for</span> Linux........
+VirtualBox Guest Additions installer
+Copying additional installer modules ...
+Installing additional modules ...
+VirtualBox Guest Additions: Starting.
+VirtualBox Guest Additions: Building the VirtualBox Guest Additions kernel 
+modules.  This may take a <span class="k">while</span>.
+VirtualBox Guest Additions: To build modules <span class="k">for</span> other installed kernels, run
+VirtualBox Guest Additions:   /sbin/rcvboxadd quicksetup &lt;version&gt;
+VirtualBox Guest Additions: or
+VirtualBox Guest Additions:   /sbin/rcvboxadd quicksetup all
+VirtualBox Guest Additions: Building the modules <span class="k">for</span> kernel 
+3.10.0-1062.12.1.el7.x86_64.
+</code></pre></div><p>Show. Desmonto a ISO e removo o diretório temporário.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">umount /media/VBoxGuestAdditions <span class="o">&amp;&amp;</span> rmdir /media/VBoxGuestAdditions
+</code></pre></div><p>Já posso remover também a ISO baixada.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">rm -f VBoxGuestAdditions_6.0.16.iso
+</code></pre></div><p>Agora é chegada a hora de fazer uns ajustes finais e extremamente importante para que tudo funcione corretamente. Que são:</p>
+<p>Criar o arquivo <code>/etc/sudoers.d/vagrant</code> com o conteúdo abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">Defaults:vagrant !requiretty
+vagrant <span class="nv">ALL</span><span class="o">=</span><span class="o">(</span>ALL<span class="o">)</span> NOPASSWD: ALL
+</code></pre></div><p>AJusto as permissões do arquivo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">chmod <span class="m">0440</span> /etc/sudoers.d/vagrant
+</code></pre></div><p>Dou aquela conferida pra checar se ficou tudo OK mesmo com o arquivo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">visudo -c -f /etc/sudoers.d/vagrant
+</code></pre></div><p>O resultado do comando acima precisa ser <code>parsed OK</code>.</p>
+<p>Agora crio o diretório que ficará a chave pública do usuário <strong>vagrant</strong>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">mkdir /home/vagrant/.ssh
+</code></pre></div><p>Insiro a chave pública.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -k https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant.pub &gt; /home/vagrant/.ssh/authorized_keys
+</code></pre></div><p>E ajusto as permissões.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">chown vagrant:vagrant /home/vagrant/.ssh -R
+chmod <span class="m">0700</span> /home/vagrant/.ssh
+chmod <span class="m">0600</span> /home/vagrant/.ssh/authorized_keys
+</code></pre></div><p>Faço uma rápida conferência no arquivo <code>/etc/ssh/sshd_config</code> para garantir que as linhas abaixo estejam presentes.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">AuthorizedKeysFile      .ssh/authorized_keys
+UseDNS no
+</code></pre></div><p>Agora executo os comandos abaixo para limpar a VM antes de empacotar.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">yum clean all
+dd <span class="nv">status</span><span class="o">=</span>progress <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>/EMPTY <span class="nv">bs</span><span class="o">=</span>1M
+rm -f /EMPTY
+<span class="nb">echo</span> &gt; /root/.bash_history <span class="o">&amp;&amp;</span> <span class="nb">history</span> -c <span class="o">&amp;&amp;</span> <span class="nb">exit</span>
+</code></pre></div><h4 id="gerando-a-box-">Gerando a Box</h4>
+<p>Desligo a VM com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">VBoxManage controlvm CentOS-7-x86_64-Minimal-1908 poweroff
+</code></pre></div><p>Lembrando que <code>CentOS-7-x86_64-Minimal-1908</code> é o nome da minha VM.</p>
+<p>Agora sim executo o famigerado comando para empacotar a VM.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">vagrant package --output CentOS-7-x86_64-Minimal-1908.box --base CentOS-7-x86_64-Minimal-1908
+</code></pre></div><p>Acima, <code>CentOS-7-x86_64-Minimal-1908.box</code> é o nome que dei para minha Box, na qual gerei tendo como base a VM de nome <code>CentOS-7-x86_64-Minimal-1908</code>. Bem simples.</p>
+<p>O comando acima irá demandar alguns minutos e terá como resultado a seguinte saída.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="o">=</span><span class="o">=</span>&gt; CentOS-7-x86_64-Minimal-1908: Clearing any previously <span class="nb">set</span> forwarded ports...
+<span class="o">=</span><span class="o">=</span>&gt; CentOS-7-x86_64-Minimal-1908: Exporting VM...
+<span class="o">=</span><span class="o">=</span>&gt; CentOS-7-x86_64-Minimal-1908: Compressing package to: /home/ewerton/CentOS-7-x86_64-Minimal-1908.box
+</code></pre></div><p>Vagrant Box gerado, já posso importar via <code>vagrant box add ...</code>, mas eu particularmente não gosto. Prefiro criar um arquivo JSON com as informações de importação da Box, porque assim tenho mais controle e oportunidade para versionar. Isso mesmo, trabalhar com versionamento.</p>
+<p>Pra isso, gero uma hash sha256sum do arquivo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sha256sum CentOS-7-x86_64-Minimal-1908.box
+</code></pre></div><p>Resultado do comando acima.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">5f3ae4fda102fe8da68b60b683316e5dc6d7d37c9c9291e98524379719c0464a  CentOS-7-x86_64-Minimal-1908.box
+</code></pre></div><p>Agora &ldquo;confecciono&rdquo; um arquivo JSON chamado <code>CentOS-7-x86_64-Minimal-1908.json</code> - gosto de sempre utilizar o nome da Box - cujo conteudo é:</p>
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;CentOS-7-x86_64-Minimal-1908&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;This box contains CentOS 7.7.1908 (Core) 64-bit.&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;versions&#34;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&#34;version&#34;</span><span class="p">:</span> <span class="s2">&#34;1.0.0&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;providers&#34;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">{</span>
+            <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;virtualbox&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;url&#34;</span><span class="p">:</span> <span class="s2">&#34;file:///home/ewerton/CentOS-7-x86_64-Minimal-1908.box&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum_type&#34;</span><span class="p">:</span> <span class="s2">&#34;sha256&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum&#34;</span><span class="p">:</span> <span class="s2">&#34;5f3ae4fda102fe8da68b60b683316e5dc6d7d37c9c9291e98524379719c0464a&#34;</span>
+          <span class="p">}</span>
+        <span class="p">]</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><p>Só de bater o olho já percebemos do que se trata. Bem autoexplicativo.</p>
+<p>Agora é só criar um Vagrantifile e rodar a VM.</p>
+<p>Como? Assim, gigante.</p>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># -*- mode: ruby -*-</span><span class="w">
+</span><span class="w"></span><span class="c"># vi: set ft=ruby :</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>Vagrant.configure(<span class="s2">&#34;2&#34;</span>)<span class="w"> </span>do<span class="w"> </span>|config<span class="sd">|
+</span><span class="sd">
+</span><span class="sd">
+</span><span class="sd"> </span><span class="sd"> </span><span class="sd">config.vm.define &#34;centos-tutorial&#34; do |centos|</span><span class="w">
+</span><span class="w">    </span>centos.vm.box<span class="w"> </span>=<span class="w"> </span><span class="s2">&#34;CentOS-7-x86_64-Minimal-1908&#34;</span><span class="w">
+</span><span class="w">    </span>centos.vm.box_version<span class="w"> </span>=<span class="w"> </span><span class="s2">&#34;1.0.0&#34;</span><span class="w">
+</span><span class="w">    </span>centos.vm.box_url<span class="w"> </span>=<span class="w"> </span><span class="s2">&#34;file:///home/ewerton/CentOS-7-x86_64-Minimal-1908.json&#34;</span><span class="w">
+</span><span class="w">    </span>centos.vm.box_check_update<span class="w"> </span>=<span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w">    </span>centos.vm.hostname<span class="w"> </span>=<span class="w"> </span><span class="s2">&#34;centos-tutorial&#34;</span><span class="w">
+</span><span class="w">    </span>centos.vm.network<span class="w"> </span><span class="s2">&#34;private_network&#34;</span><span class="k">, ip</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;10.10.10.10&#34;</span><span class="w">
+</span><span class="w">    </span>centos.vm.post_up_message<span class="w"> </span>=<span class="w"> </span><span class="s2">&#34;CentOS 7.7.1908&#34;</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span>centos.vm.provider<span class="w"> </span><span class="s2">&#34;virtualbox&#34;</span><span class="w"> </span>do<span class="w"> </span>|vb<span class="sd">|
+</span><span class="sd">     </span><span class="sd"> </span><span class="sd">vb.name = &#34;vagrant-centos-tutorial&#34;</span><span class="w">
+</span><span class="w">      </span>vb.gui<span class="w"> </span>=<span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w">      </span>vb.cpus<span class="w"> </span>=<span class="w"> </span><span class="m">2</span><span class="w">
+</span><span class="w">      </span>vb.memory<span class="w"> </span>=<span class="w"> </span><span class="m">1024</span><span class="w">
+</span><span class="w">    </span>end<span class="w">
+</span><span class="w">
+</span><span class="w">    </span>centos.vm.provision<span class="w"> </span><span class="s2">&#34;shell&#34;</span><span class="k">, inline</span><span class="p">:</span><span class="w"> </span>&lt;&lt;-SHELL<span class="w">
+</span><span class="w">      </span>getenforce<span class="w">
+</span><span class="w">      </span>firewall-cmd<span class="w"> </span>--state<span class="w">
+</span><span class="w">    </span>SHELL<span class="w">
+</span><span class="w">  </span>end<span class="w">
+</span><span class="w"></span>end<span class="w">
+</span></code></pre></div><p>Confiro se a sintaxe está correta.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">vagrant validate
+</code></pre></div><p>O resultado do comando acima precisa ser <code>Vagrantfile validated successfully.</code></p>
+<p>Já posso brincar com a Box executando o comando <code>vagrant up</code>.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/13-screenshot-vagrant-box-customized.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/13-screenshot-vagrant-box-customized.png"
+        alt="Imagem 13"/></a></span><span class="caption"><span class="title">Resultado do comando vagrant up</span></span></span></p>
+<p>O resultado só poderia ser sucesso. Muito bom.</p>
+<p>Seguindo os passos acima e adaptando alguns pontos você conseguirá criar qualquer Box personalizada para utilizar em ambientes de estudo.</p>
+<p>Lembrando que aqui mostrei a importação de uma Box local, no meu notebook. Num próximo artigo demonstro como criar um repositório privado e centralizado utilizando um servidor web. Dessa forma você não precisará utilizar o <a href="https://app.vagrantup.com/boxes/search"title="Link de acesso ao site do Vagrant Cloud"target="_blank">Vagrant Cloud</a>.</p>
+<p>Até a próxima e sucesso. Abraço!</p>
+</article><section class="article labels"><a class="category" href=/categories/vagrant/>vagrant</a><a class="tag" href=/tags/vagrant/>vagrant</a></section><section class="article navigation"><p><a class="link" href="/post/reverse-proxy-proxmox/"><span class="li">&rarr;</span>Apache HTTP Server como proxy reverso para o Proxmox VE</a class="link">
+    </p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 Ewerton Silva.</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>
