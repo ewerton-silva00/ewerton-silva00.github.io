@@ -59,12 +59,15 @@ firewall-cmd --reload
 <p>Execute o comando abaixo para gerar um certificado auto-assinado.</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">openssl req -x509 -nodes -days <span class="m">365</span> -newkey rsa:2048 -keyout /etc/httpd/ssl/pve.key -out /etc/httpd/ssl/pve.crt
 </code></pre></div><p>Preencha os campos solicitados, mas <strong>atenção</strong> na opção <strong>Common Name</strong>, pois ela precisa ser igual ao endereço que você pretende informar no browser. No meu caso, <code>pve.meudominio.local</code>.</p>
+<blockquote>
+<p><a href="https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-apache-in-ubuntu-18-04-pt"title="Link de acesso a um tutorial no site da Digital Ocean"target="_blank">Clique aqui</a> caso você tenha dúvidas sobre o processo acima de gerar o certificado auto-assinado.</p>
+</blockquote>
 <p>O resultado foi a criação de dois arquivos:</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>root@proxy-server ~<span class="o">]</span><span class="c1"># ls -l /etc/httpd/ssl/</span>
 total <span class="m">8</span>
 -rw-r--r--. <span class="m">1</span> root root <span class="m">1505</span> Feb <span class="m">11</span> 23:57 pve.crt
 -rw-r--r--. <span class="m">1</span> root root <span class="m">1704</span> Feb <span class="m">11</span> 23:57 pve.key
-</code></pre></div><p>Sensacional. Agora temos tudo pra criar o arquivo de Virtual Host.</p>
+</code></pre></div><p>Sensacional. Agora temos tudo para criar o arquivo de Virtual Host.</p>
 <h4 id="criando-o-arquivo-de-virtual-host-">Criando o arquivo de Virtual Host</h4>
 <p>Crie o arquivo <code>/etc/httpd/conf.d/pve.conf</code> com o conteúdo abaixo.</p>
 <div class="highlight"><pre class="chroma"><code class="language-html" data-lang="html"><span class="p">&lt;</span><span class="nt">VirtualHost</span> <span class="err">*</span><span class="na">:80</span><span class="p"></span><span class="p">&gt;</span>
@@ -114,16 +117,19 @@ total <span class="m">8</span>
     SSLHonorCipherOrder On
     
     SSLCertificateKeyFile /etc/httpd/ssl/pve.key
-    SSLCertificateFile /etc/https/ssl/pve.crt
+    SSLCertificateFile /etc/httpd/ssl/pve.crt
 <span class="p">&lt;</span><span class="p">/</span><span class="nt">VirtualHost</span><span class="p">&gt;</span>
-</code></pre></div><p><strong>Observação:</strong> No arquivo acima o IP <code>10.10.1.122</code> é o meu servidor Proxmox. Você precisa então substituir pelo IP do seu Proxmox.</p>
+</code></pre></div><p><strong>Primeira Observação:</strong> No arquivo acima o IP <code>10.10.1.122</code> é o meu servidor Proxmox. Você precisa então substituir pelo IP do seu Proxmox.</p>
+<p><strong>Segunda Observação:</strong> O nome <code>pve.meudominio.local</code> está configurado no arquivo <code>/etc/hosts</code> do meu notebook. No seu caso o nome escolhido precisa estar em conformidade com o seu DNS público e/ou local.</p>
 <p>Feito todos os passos acima, já posso abrir o meu browser e digitar <code>http://pve.meudominio.local</code> que terei acesso ao dashboard do Proxmox com tudo funcional, inclusive <strong>spice</strong> e <strong>websockets</strong>.</p>
-<p><strong>Outra observação:</strong> Por se tratar de um certificado auto-assinado, no primeiro acesso teremos aquela puxada de orelha do browser informando que o certificado do site não é confiável. Normal.</p>
+<p><strong>Terceira Observação:</strong> Por se tratar de um certificado auto-assinado, no primeiro acesso teremos aquela puxada de orelha do browser informando que o certificado do site não é confiável. Normal.</p>
 <p>Olha só como ficou no browser. Bem melhor que digitar <code>https://10.10.1.122:8006/</code>, hein.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
   href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/screenshot-dashboard-pve.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/screenshot-dashboard-pve.png"
         alt="pve.meudominio.local"/></a></span><span class="caption"><span class="title">Screenshot do dashboard do Proxmox VE</span></span></span></p>
-<p>Aqui te mostrei o básico para criar um proxy reverso para acesso ao dashboard do Proxmox VE. Abraço!</p>
+<p>Aqui te mostrei o básico para criar um proxy reverso utilizando o Apache HTTP Server num servidor CentOS 7.x.</p>
+<p>Se preciso for, o apache também pode ser instalado e configurado no próprio servidor do Proxmox, mas nesse caso mudam alguns dos passos acima, pois será trabalhado o pacote <code>apache2</code> num sistema operacional <code>Debian</code>. Assunto para um próximo artigo.</p>
+<p>Espero que aproveite todo esse conteúdo. Abraço!</p>
 </article><section class="article labels"><a class="category" href=/categories/proxmox/>proxmox</a><a class="tag" href=/tags/proxmox/>proxmox</a><a class="tag" href=/tags/apache/>apache</a><a class="tag" href=/tags/dicas/>dicas</a></section><section class="article navigation"><p><a class="link" href="/post/vagrant-box-customized/"><span class="li">&larr;</span>Criando sua própria Vagrant Box para o VirtualBox</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
     <p class="copyright">©2020 Ewerton Silva.</p>
     <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
