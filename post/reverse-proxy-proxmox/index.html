@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.64.1" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>Apache HTTP Server como proxy reverso para o Proxmox VE&nbsp;&ndash;&nbsp;Ewerton Silva</title><link rel="stylesheet" href="/css/core.min.3a6a7ee40924e66a058442d11843d6fbb5cb58f03e94fdd9991fed82c0f7abc3a41a2443ab9b4b0d27feb2dc16a98e81.css" integrity="sha384-Omp&#43;5Akk5moFhELRGEPW&#43;7XLWPA&#43;lP3ZmR/tgsD3q8OkGiRDq5tLDSf&#43;stwWqY6B"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="supported-color-schemes" content="light dark"><title>Apache HTTP Server como proxy reverso para o Proxmox VE e suporte ao noVNC&nbsp;&ndash;&nbsp;Ewerton Silva</title><link rel="stylesheet" href="/css/core.min.3a6a7ee40924e66a058442d11843d6fbb5cb58f03e94fdd9991fed82c0f7abc3a41a2443ab9b4b0d27feb2dc16a98e81.css" integrity="sha384-Omp&#43;5Akk5moFhELRGEPW&#43;7XLWPA&#43;lP3ZmR/tgsD3q8OkGiRDq5tLDSf&#43;stwWqY6B"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="manifest" href="/site.webmanifest">
@@ -11,7 +11,7 @@
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Ewerton Silva</span></a></span>
         <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Feito por um SysAdmin Linux</span></div></section><div id="content"><section class="article header">
-    <h1 class="article title">Apache HTTP Server como proxy reverso para o Proxmox VE</h1><p class="article date">Tuesday, February 11, 2020</p></section><article class="article markdown-body"><p>Quem me conhece sabe que gosto demais do Proxmox Virtual Environment (PVE para os íntimos), porque ele proporciona uma plataforma completa de virtualização de máquinas virtuais de forma simples, robusta e OpenSource, garantindo inclusive suporte para uma arquitetura de Virtualização Hiperconvergente. <a href="https://www.proxmox.com/en/proxmox-ve"title="Link para o site oficial do Proxmox VE"target="_blank">Clique aqui</a> para saber mais sobre PVE.</p>
+    <h1 class="article title">Apache HTTP Server como proxy reverso para o Proxmox VE e suporte ao noVNC</h1><p class="article date">Tuesday, February 11, 2020</p></section><article class="article markdown-body"><p>Quem me conhece sabe que gosto demais do Proxmox Virtual Environment (PVE para os íntimos), porque ele proporciona uma plataforma completa de virtualização de máquinas virtuais de forma simples, robusta e OpenSource, garantindo inclusive suporte para uma arquitetura de Virtualização Hiperconvergente. <a href="https://www.proxmox.com/en/proxmox-ve"title="Link para o site oficial do Proxmox VE"target="_blank">Clique aqui</a> para saber mais sobre PVE.</p>
 <p>Atualmente não o utilizo em produção, apenas em ambiente de estudos. Quem me dera, hein, brincar com esse cara em produção.</p>
 <p>Conforme o título desse artigo, o meu objetivo é mostrar como configurar um proxy reverso afim de evitar ficar acessando o dashboard do Proxmox via <strong>IP + Porta</strong> ou <strong>Hostname + Porta</strong>. Chato demais acessar qualquer serviço dessa forma.</p>
 <p>De momento irei utilizar o Apache HTTP Server, porque sim, porque eu gosto desse carinha. Num futuro próximo posso demonstrar utilizando o Nginx (pronuncia-se &ldquo;enginex&rdquo;).</p>
@@ -119,16 +119,24 @@ total <span class="m">8</span>
     SSLCertificateKeyFile /etc/httpd/ssl/pve.key
     SSLCertificateFile /etc/httpd/ssl/pve.crt
 <span class="p">&lt;</span><span class="p">/</span><span class="nt">VirtualHost</span><span class="p">&gt;</span>
+</code></pre></div><p>Execute o comando abaixo para verificar se o arquivo de Virtual Host criado está OK. Só pra garantir.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">apachectl configtest
+</code></pre></div><p>Retornando <code>Syntax OK</code> pode recarregar as cofigurações do apache com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">systemctl reload httpd
 </code></pre></div><p><strong>Primeira Observação:</strong> No arquivo acima o IP <code>10.10.1.122</code> é o meu servidor Proxmox. Você precisa então substituir pelo IP do seu Proxmox.</p>
 <p><strong>Segunda Observação:</strong> O nome <code>pve.meudominio.local</code> está configurado no arquivo <code>/etc/hosts</code> do meu notebook. No seu caso o nome escolhido precisa estar em conformidade com o seu DNS público e/ou local.</p>
-<p>Feito todos os passos acima, já posso abrir o meu browser e digitar <code>http://pve.meudominio.local</code> que terei acesso ao dashboard do Proxmox com tudo funcional, inclusive <strong>spice</strong> e <strong>websockets</strong>.</p>
+<p>Feito todos os passos acima, já posso abrir o meu browser e digitar <code>http://pve.meudominio.local</code> que terei acesso ao dashboard do Proxmox com tudo funcional, exceto o <strong>spiceproxy</strong>. Infelizmente.</p>
+<blockquote>
+<p>O <strong>spiceproxy</strong> não funciona nesse modelo de Proxy Reverso que estamos trabalhando aqui, porque ele associa a porta <strong>3128</strong> ao host local.  Exemplo: <code>proxy=http://pve.meudominio.local:3128</code>.</p>
+<p>Nesse caso, o <strong>spiceproxy</strong> funciona muito bem quando o Apache está em execução no mesmo host que o Proxmox.</p>
+</blockquote>
 <p><strong>Terceira Observação:</strong> Por se tratar de um certificado auto-assinado, no primeiro acesso teremos aquela puxada de orelha do browser informando que o certificado do site não é confiável. Normal.</p>
 <p>Olha só como ficou no browser. Bem melhor que digitar <code>https://10.10.1.122:8006/</code>, hein.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
   href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/screenshot-dashboard-pve.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/screenshot-dashboard-pve.png"
         alt="pve.meudominio.local"/></a></span><span class="caption"><span class="title">Screenshot do dashboard do Proxmox VE</span></span></span></p>
 <p>Aqui te mostrei o básico para criar um proxy reverso utilizando o Apache HTTP Server num servidor CentOS 7.x.</p>
-<p>Se preciso for, o apache também pode ser instalado e configurado no próprio servidor do Proxmox, mas nesse caso mudam alguns dos passos acima, pois será trabalhado o pacote <code>apache2</code> num sistema operacional <code>Debian</code>. Assunto para um próximo artigo.</p>
+<p>Se preciso for, o apache também pode ser instalado e configurado no próprio servidor do Proxmox, pois assim o <strong>spiceproxy</strong> funciona 100%, mas nesse caso mudam alguns dos passos acima, pois será trabalhado o pacote <code>apache2</code> num sistema operacional <code>Debian</code>. Assunto para um próximo artigo.</p>
 <p>Espero que aproveite todo esse conteúdo. Abraço!</p>
 </article><section class="article labels"><a class="category" href=/categories/proxmox/>proxmox</a><a class="tag" href=/tags/proxmox/>proxmox</a><a class="tag" href=/tags/apache/>apache</a><a class="tag" href=/tags/dicas/>dicas</a></section><section class="article navigation"><p><a class="link" href="/post/vagrant-box-customized/"><span class="li">&larr;</span>Criando sua própria Vagrant Box para o VirtualBox</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
     <p class="copyright">©2020 Ewerton Silva.</p>

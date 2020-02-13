@@ -13,7 +13,7 @@
     
     
     <item>
-      <title>Apache HTTP Server como proxy reverso para o Proxmox VE</title>
+      <title>Apache HTTP Server como proxy reverso para o Proxmox VE e suporte ao noVNC</title>
       <link>/post/reverse-proxy-proxmox/</link>
       <pubDate>Tue, 11 Feb 2020 16:47:41 -0300</pubDate>
       
