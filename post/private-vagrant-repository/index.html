@@ -32,13 +32,13 @@
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">127.0.0.1	localhost
 ::1         localhost
 10.10.10.10	vagrant-repo.meudominio.local vagrant-repo
-</code></pre></div><p><code>10.10.10.10</code> é o IP do meu servidor e <code>meudominio.local</code> é o domínio que estou utilizando para este artigo. Ajuste de acordo com o seu ambiente.</p>
+</code></pre></div><p><code>10.10.10.10</code> é o IP do meu servidor, <code>vagrant-repo</code> é o nome do servidor e <code>meudominio.local</code> é o domínio que estou utilizando para este artigo. Ajuste de acordo com o seu ambiente.</p>
 <ul>
 <li>Ajustar minhas configurações de localidades.</li>
 </ul>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">localectl set-locale <span class="nv">LANG</span><span class="o">=</span>pt_BR.UTF-8
 </code></pre></div><ul>
-<li>Garantir que o meu timezone está correto.</li>
+<li>Garantir que o meu timezone esteja correto.</li>
 </ul>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">timedatectl set-timezeon <span class="s2">&#34;America/Recife&#34;</span>
 </code></pre></div><ul>
@@ -53,7 +53,7 @@ sed -i <span class="s1">&#39;s/SELINUX=enforcing/SELINUX=permissive/g&#39;</span
 firewall-cmd --reload
 </code></pre></div><p>Tudo certo. Agora posso continuar tranquilo.</p>
 <h4 id="criando-a-estrutura-de-diretórios-necessária-">Criando a estrutura de diretórios necessária</h4>
-<p>Preciso criar uma estrutura de diretórios na qual seja possível versionar de forma organizada as Boxes posteriormente.</p>
+<p>Preciso criar uma estrutura de diretórios na qual seja possível versionar posteriormente as Boxes de forma organizada.</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">mkdir -p /var/www/html/vagrant/boxes
 </code></pre></div><p>Cada Box terá um diretório principal (raíz) e diversos subdiretórios que corresponderão por suas versões.</p>
 <p>Para este artigo, por exemplo, estou utilizando uma Box chamada <strong>centos-base-image</strong>, que está na versão <strong>20200213.0.0</strong>.</p>
@@ -93,7 +93,7 @@ firewall-cmd --reload
     <span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div><blockquote>
-<p>Perceba que acima, no campo <strong>url</strong>, utilizei o DNS <code>repo.meudominio.local</code> e não <code>vagrant-repo.meudominio.local</code>, que é o nome do servidor. Gosto de trabalhar assim. Utilizarei esse nome mais na frente, na criação do Virtual Host.</p>
+<p>Perceba que acima, no campo <strong>url</strong>, utilizei o DNS <code>repo.meudominio.local</code> e não <code>vagrant-repo.meudominio.local</code>, que é o nome do servidor. Gosto e acho importante trabalhar assim. Utilizarei esse nome mais na frente, na criação do Virtual Host.</p>
 <p>Com isso o nome <code>repo.meudominio.local</code> é um <code>CNAME</code> para <code>vagrant-repo.meudominio.local</code>.</p>
 <p>Analise se isso faz sentido pra você.</p>
 </blockquote>
@@ -134,7 +134,7 @@ firewall-cmd --reload
   href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-private-vagrant-repository.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-private-vagrant-repository.png"
         alt="Imagem 00"/></a></span><span class="caption"><span class="title">Imagem com o resultado do funcionamento do repositorio no browser</span></span></span></p>
 <h4 id="baixando-e-executando-a-box-a-partir-do-vagrantfile-">Baixando e executando a Box a partir do Vagrantfile</h4>
-<p>Para validar se ficou tudo OK mesmo, basta eu criar um Vagrantfile abaixo.</p>
+<p>Para validar se ficou tudo OK mesmo, basta eu criar o Vagrantfile abaixo.</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># -*- mode: ruby -*-</span>
 <span class="c1"># vi: set ft=ruby :</span>
 
@@ -164,7 +164,7 @@ Vagrant.configure<span class="o">(</span><span class="s2">&#34;2&#34;</span><spa
 </span><span class="s">     SHELL</span>
   end
 end
-</code></pre></div><p>Executo uma teste de validação de sintaxe. Importante.</p>
+</code></pre></div><p>Executo um teste de validação de sintaxe. Importante.</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">vagrant validate
 </code></pre></div><p>O resultado do comando acima precisa ser <code>Vagrantfile validated successfully.</code></p>
 <p>Agora é só executar o comando <code>vagrant up</code>.</p>
@@ -172,10 +172,10 @@ end
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
   href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-private-vagrant-repository.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-private-vagrant-repository.png"
         alt="Imagem 01"/></a></span><span class="caption"><span class="title">Screenshot da execução do comando vagrant up</span></span></span></p>
-<p>Só sucesso. Nas próximas execuções dessa Box não será mais necessário baixar a imagem do repositório, porque a Box já foi importada para o repositório local. Esse fluxo pode ser comparado as imagens Docker.</p>
+<p>Só sucesso. Nas próximas execuções dessa Box não será mais necessário baixar a imagem do repositório, porque a Box já foi importada para o repositório local. Esse fluxo pode ser comparado a trabalhar com imagens Docker.</p>
 <h4 id="versionando-as-boxes-">Versionando as Boxes</h4>
-<p>Então, para versionar as Boxes é simples, basta seguir o mesmo fluxo que fiz neste artigo, porém, acrescentar mais um subdiretório com a nova versão da Boxe e acrescentar.</p>
-<p>Digamos que precisei adicionar o serviço <code>ntpd</code> na Box, para quando alguém baixar e executar o serviço já esteja instalado e devidamente configurado. Sendo assim, seguindo a regra do <code>Versionamento Semântico</code> a imagem será versionada como <code>20200213.1.0</code>. Lembre-se que falei dessa nomenclatura mais acima.</p>
+<p>Então, para versionar as Boxes é simples, basta seguir o mesmo fluxo que fiz neste artigo, porém, acrescentando os subdiretórios das versões que irão surgindo.</p>
+<p>Digamos que precisei adicionar o serviço <code>ntpd</code> na Box, para quando alguém baixar e executar a Box o serviço já esteja instalado e devidamente configurado. Sendo assim, seguindo a regra do <code>Versionamento Semântico</code> a imagem será versionada como <code>20200213.1.0</code>. Lembre-se de que falei dessa nomenclatura mais acima.</p>
 <p>A estrutura de diretórios agora está da seguinte forma:</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">/var/www/html/vagrant/
 ├── boxes
@@ -216,15 +216,15 @@ end
     <span class="p">}</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div><blockquote>
-<p>É normal que a partir do momento em que vamos incrementando dados no arquivo <code>index.json</code> os requisitos de abrir e fechar <code>}</code> e <code>]</code> fiquem confusos. Para checar a sintaxe, utilizo um serviço web sensacional chamado <a href="https://jsonformatter.curiousconcept.com/#"title="Link de acesso ao site do serviço mencionado"target="_blank">JSON formatter &amp; Validator</a> que fazer um lint detalhado no conteúdo do arquivo JSON</p>
+<p>É normal que a partir do momento em que vamos incrementando dados no arquivo <code>index.json</code> os requisitos de abrir e fechar <code>}</code> e <code>]</code> fiquem confusos. Para checar a sintaxe, utilizo um serviço web sensacional chamado <a href="https://jsonformatter.curiousconcept.com/#"title="Link de acesso ao site do serviço mencionado"target="_blank">JSON formatter &amp; Validator</a> que faz um lint detalhado no conteúdo do arquivo JSON</p>
 </blockquote>
 <p>Quando chamo no browser obtenho o seguinte.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
   href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-private-vagrant-repository.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-private-vagrant-repository.png"
-        alt="Imagem 02"/></a></span><span class="caption"><span class="title">Imagem com a visualização do repositório no brownser</span></span></span></p>
+        alt="Imagem 02"/></a></span><span class="caption"><span class="title">Imagem com a visualização do repositório no browser</span></span></span></p>
 <p>O &ldquo;pulo do gato&rdquo; aqui é o valor boleano da linha abaixo&hellip;</p>
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">centos.vm.box_check_update <span class="o">=</span> <span class="nb">true</span>
-</code></pre></div><p>&hellip; que por estar <code>true</code> fará com que o Vagrantfile, no momento da execução do <code>vagrant up</code>, busque no repositório por atualizações e quando houver irá automaticamente executar o download da Box.</p>
+</code></pre></div><p>&hellip; que por estar <code>true</code> fará com que o Vagrant, no momento da execução do <code>vagrant up</code>, busque no repositório por atualizações e quando houver irá automaticamente executar o download da Box.</p>
 <p>Missão cumprida. Analise se essa solução é útil pra você e em caso positivo desejo bom uso.</p>
 <p>Abraço!</p>
 </article><section class="article labels"><a class="category" href=/categories/vagrant/>vagrant</a><a class="tag" href=/tags/vagrant/>vagrant</a><a class="tag" href=/tags/apache/>apache</a></section><section class="article navigation"><p><a class="link" href="/post/vagrant-box-customized/"><span class="li">&rarr;</span>Criando sua própria Vagrant Box para o VirtualBox</a class="link">
