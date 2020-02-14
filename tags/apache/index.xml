@@ -7,10 +7,22 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>pt-BR</language>
     <copyright>©2020 Ewerton Silva.</copyright>
-    <lastBuildDate>Tue, 11 Feb 2020 16:47:41 -0300</lastBuildDate>
+    <lastBuildDate>Thu, 13 Feb 2020 23:42:32 -0300</lastBuildDate>
     
         <atom:link href="/tags/apache/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Provisionando um repositório privado para Vagrant Boxes</title>
+      <link>/post/private-vagrant-repository/</link>
+      <pubDate>Thu, 13 Feb 2020 23:42:32 -0300</pubDate>
+      
+      <guid>/post/private-vagrant-repository/</guid>
+      <description>No artigo anterior demonstrei passo à passo como criar suas próprias Vagrant Boxes, do zero até a execução. Ficou bem interessante.
+Neste artigo quero te mostrar como criar um repositório privado pra você publicar suas Boxes de forma controlada.
+Aqui estou utilizando uma VM com as seguintes especificações:
+ CentOS Linux release 7.7.1908 (Core) 1 GB de memória RAM 10 GB de armazenamento Usuário SSH com permissão de sudo  Executando alguns pré-requesitos Antes de executar qualquer instalação e/ou configuração gosto de assegurar que alguns pré-requesitos sejam atendidos.</description>
+    </item>
     
     <item>
       <title>Apache HTTP Server como proxy reverso para o Proxmox VE e suporte ao noVNC</title>

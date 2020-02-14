@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.64.1" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Provisionando um repositório privado para Vagrant Boxes&nbsp;&ndash;&nbsp;Ewerton Silva</title><link rel="stylesheet" href="/css/core.min.3a6a7ee40924e66a058442d11843d6fbb5cb58f03e94fdd9991fed82c0f7abc3a41a2443ab9b4b0d27feb2dc16a98e81.css" integrity="sha384-Omp&#43;5Akk5moFhELRGEPW&#43;7XLWPA&#43;lP3ZmR/tgsD3q8OkGiRDq5tLDSf&#43;stwWqY6B"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Ewerton Silva</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Feito por um SysAdmin Linux</span></div></section><div id="content"><section class="article header">
+    <h1 class="article title">Provisionando um repositório privado para Vagrant Boxes</h1><p class="article date">Thursday, February 13, 2020</p></section><article class="article markdown-body"><p>No <a href="http://localhost:1313/post/vagrant-box-customized/"title="Link de acesso ao artigo anterior"target="_blank">artigo anterior</a> demonstrei passo à passo como criar suas próprias Vagrant Boxes, do zero até a execução. Ficou bem interessante.</p>
+<p>Neste artigo quero te mostrar como criar um repositório privado pra você publicar suas Boxes de forma controlada.</p>
+<p>Aqui estou utilizando uma VM com as seguintes especificações:</p>
+<ul>
+<li>CentOS Linux release 7.7.1908 (Core)</li>
+<li>1 GB de memória RAM</li>
+<li>10 GB de armazenamento</li>
+<li>Usuário SSH com permissão de <strong>sudo</strong></li>
+</ul>
+<h4 id="executando-alguns-pré-requesitos-">Executando alguns pré-requesitos</h4>
+<p>Antes de executar qualquer instalação e/ou configuração gosto de assegurar que alguns pré-requesitos sejam atendidos. Como:</p>
+<ul>
+<li>Ajustar o nome do servidor de acordo com a função à ele concedida.</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">hostnamectl set-hostname vagrant-repo <span class="o">&amp;&amp;</span> bash
+</code></pre></div><ul>
+<li>Editar o arquivo <code>/etc/hosts</code> para garantir que ele esteja semelhante a configuração abaixo.</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">127.0.0.1	localhost
+::1         localhost
+10.10.10.10	vagrant-repo.meudominio.local vagrant-repo
+</code></pre></div><p><code>10.10.10.10</code> é o IP do meu servidor e <code>meudominio.local</code> é o domínio que estou utilizando para este artigo. Ajuste de acordo com o seu ambiente.</p>
+<ul>
+<li>Ajustar minhas configurações de localidades.</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">localectl set-locale <span class="nv">LANG</span><span class="o">=</span>pt_BR.UTF-8
+</code></pre></div><ul>
+<li>Garantir que o meu timezone está correto.</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">timedatectl set-timezeon <span class="s2">&#34;America/Recife&#34;</span>
+</code></pre></div><ul>
+<li>Alterar o estado do <strong>SELinux</strong> para <strong>permissive</strong>.</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">setenforce <span class="m">0</span>
+sed -i <span class="s1">&#39;s/SELINUX=enforcing/SELINUX=permissive/g&#39;</span> /etc/selinux/config
+</code></pre></div><ul>
+<li>Vou adiantar logo a liberação da porta <code>80/HTTP</code> no firewalld.</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">firewall-cmd --permanent --add-service<span class="o">=</span>http
+firewall-cmd --reload
+</code></pre></div><p>Tudo certo. Agora posso continuar tranquilo.</p>
+<h4 id="criando-a-estrutura-de-diretórios-necessária-">Criando a estrutura de diretórios necessária</h4>
+<p>Preciso criar uma estrutura de diretórios na qual seja possível versionar de forma organizada as Boxes posteriormente.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">mkdir -p /var/www/html/vagrant/boxes
+</code></pre></div><p>Cada Box terá um diretório principal (raíz) e diversos subdiretórios que corresponderão por suas versões.</p>
+<p>Para este artigo, por exemplo, estou utilizando uma Box chamada <strong>centos-base-image</strong>, que está na versão <strong>20200213.0.0</strong>.</p>
+<blockquote>
+<p>A versão acima nada mais é que <code>MAJOR.MINOR.PATCH</code>.</p>
+<p><strong>MAJOR</strong>: aqui utilizo a data de publicação da Box, semelhante ao que se pede no formato de data estabelecido pela <a href="https://www.iso.org/iso-8601-date-and-time-format.html"title="Link de acesso ao site oficial do ISO.ORG"target="_blank">ISO 8601 Date And Time Format</a>.</p>
+<p><strong>MINOR</strong>: aqui são adições de funcionalidades, porém mantendo a compatibilidade.</p>
+<p><strong>PATCH</strong>: esse representa correções de falhas mantendo a compatibilidade.</p>
+<p>Para mais informações sobre esse formato de versionamento é só consultar o manual <a href="https://semver.org/lang/pt-BR/"title="Link de acesso ao site do manual sobre Versionamento Semântico"target="_blank">Versionamento Semântico 2.0.0</a>.</p>
+</blockquote>
+<p>Com as informações acima devidamente explicadas, posso dar continuidade criando o diretório base da Box assim como seu subdiretório.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">mkdir -p /var/www/html/vagrant/boxes/centos-base-image/v20200213.0.0
+</code></pre></div><p>Faço o upload do arquivo <code>centos-base-image.box</code> para o repositório.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">scp centos-base-image.box root@vagrant-repo.meudominio.local:/var/www/html/vagrant/boxes/centos-base-image/v20200213.0.0
+</code></pre></div><p>No mesmo diretório da Box mantenho um arquivo contendo a hash <a href="https://pt.wikipedia.org/wiki/SHA-2"title="Link para saber mais sobre SHA256"target="_blank">SHA256</a> que será utilizada para validar o arquivo.</p>
+<p>Para gerar a hash é simples. Basta executar o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sha256sum centos-base-image.box
+</code></pre></div><p>Na sequência basta pegar a saída do comando acima e criar um arquivo de mesmo nome da Box, mas com sufixo <strong>.sha256</strong>. No meu caso o arquivo que criei foi nomeado de <code>centos-base-image.box.sha256</code> cujo conteúdo é:</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">55dbddadfa7f169e569898bcfcef44c5cec3d679bf53fc0634fdcb2d11074700  centos-base-image.box
+</code></pre></div><p>Para finalizar essa parte, preciso apenas criar um arquivo no formato JSON que servirá como um index contendo as informações de todas as Boxes disponíveis no repositório. Vou nomear o arquivo de <code>index.json</code>.</p>
+<p>Como só tenho uma Box no repositório até então, o arquivo ficará da seguinte forma</p>
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;centos-base-image&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;This box contains CentOS 7.7.1908 (Core) 64-bit.&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;versions&#34;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&#34;version&#34;</span><span class="p">:</span> <span class="s2">&#34;20200213.0.0&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;providers&#34;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">{</span>
+            <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;virtualbox&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;url&#34;</span><span class="p">:</span> <span class="s2">&#34;http://repo.meudominio.local/boxes/centos-base-image/v20200213.0.0/centos-base-image.box&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum_type&#34;</span><span class="p">:</span> <span class="s2">&#34;sha256&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum&#34;</span><span class="p">:</span> <span class="s2">&#34;55dbddadfa7f169e569898bcfcef44c5cec3d679bf53fc0634fdcb2d11074700&#34;</span>
+          <span class="p">}</span>
+        <span class="p">]</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><blockquote>
+<p>Perceba que acima, no campo <strong>url</strong>, utilizei o DNS <code>repo.meudominio.local</code> e não <code>vagrant-repo.meudominio.local</code>, que é o nome do servidor. Gosto de trabalhar assim. Utilizarei esse nome mais na frente, na criação do Virtual Host.</p>
+<p>Com isso o nome <code>repo.meudominio.local</code> é um <code>CNAME</code> para <code>vagrant-repo.meudominio.local</code>.</p>
+<p>Analise se isso faz sentido pra você.</p>
+</blockquote>
+<p>Para finalizar esta parte temos a seguinte estrutura de diretórios.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">/var/www/html/vagrant/
+├── boxes
+│   └── centos-base-image
+│       └── v20200213.0.0
+│           ├── centos-base-image.box
+│           └── centos-base-image.box.sha256
+└── index.json
+
+<span class="m">3</span> directories, <span class="m">3</span> files
+</code></pre></div><h4 id="configuração-do-virtual-host-">Configuração do Virtual Host</h4>
+<p>Aqui o negócio é mais simples.</p>
+<p>Basta eu criar o arquivo <code>/etc/httpd/conf.d/vagrant.conf</code> com o seguinte conteúdo:</p>
+<div class="highlight"><pre class="chroma"><code class="language-html" data-lang="html"><span class="p">&lt;</span><span class="nt">VirtualHost</span> <span class="err">*</span><span class="na">:80</span><span class="p"></span><span class="p">&gt;</span>
+	ServerName repo.meudominio.local
+	ServerAlias repo
+	ServerAdmin sysadmin@meudominio.local
+	DocumentRoot &#34;/var/www/html/vagrant&#34;
+
+	ErrorLog logs/repo.meudominio.local_error.log
+	CustomLog logs/repo.meudominio.local_access.log combined
+
+	<span class="p">&lt;</span><span class="nt">IfModule</span> <span class="na">dir_module</span><span class="p"></span><span class="p">&gt;</span>
+		DirectoryIndex index.json
+	<span class="p">&lt;</span><span class="p">/</span><span class="nt">IfModule</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="p">/</span><span class="nt">VirtualHost</span><span class="p">&gt;</span>
+</code></pre></div><p>Por enquanto vou brincar só na porta 80/HTTP mesmo.</p>
+<p>Verifico se ficou tudo OK com a sintaxe do arquivo. Importante.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">apachectl configtest
+</code></pre></div><p>O resultado precisa ser <code>Syntax OK</code>.</p>
+<p>Na sequência, recarrego as configurações do Apache com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">systemctl reload httpd
+</code></pre></div><p>Agora é só chamar no browser.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-private-vagrant-repository.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-private-vagrant-repository.png"
+        alt="Imagem 00"/></a></span><span class="caption"><span class="title">Imagem com o resultado do funcionamento do repositorio no browser</span></span></span></p>
+<h4 id="baixando-e-executando-a-box-a-partir-do-vagrantfile-">Baixando e executando a Box a partir do Vagrantfile</h4>
+<p>Para validar se ficou tudo OK mesmo, basta eu criar um Vagrantfile abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># -*- mode: ruby -*-</span>
+<span class="c1"># vi: set ft=ruby :</span>
+
+Vagrant.configure<span class="o">(</span><span class="s2">&#34;2&#34;</span><span class="o">)</span> <span class="k">do</span> <span class="p">|</span>config<span class="p">|</span>
+  
+  config.vm.define <span class="s2">&#34;centos-base-image&#34;</span> <span class="k">do</span> <span class="p">|</span>centos<span class="p">|</span>
+    centos.vm.box <span class="o">=</span> <span class="s2">&#34;centos-base-image&#34;</span>
+    centos.vm.box_version <span class="o">=</span> <span class="s2">&#34;20200213.0.0&#34;</span>
+    centos.vm.box_url <span class="o">=</span> <span class="s2">&#34;http://repo.meudominio.local&#34;</span>
+    centos.vm.box_download_checksum <span class="o">=</span> <span class="s2">&#34;http://repo.meudominio.local/boxes/centos-base-image/v20200213.0.0/centos-base-image.box.sha256&#34;</span>
+    centos.vm.box_download_checksum_type <span class="o">=</span> <span class="s2">&#34;sha256&#34;</span>
+    centos.vm.box_check_update <span class="o">=</span> <span class="nb">true</span>
+    centos.vm.hostname <span class="o">=</span> <span class="s2">&#34;centos-tutorial&#34;</span>
+    centos.vm.network <span class="s2">&#34;private_network&#34;</span>, ip: <span class="s2">&#34;10.10.10.5&#34;</span>
+    centos.vm.post_up_message <span class="o">=</span> <span class="s2">&#34;Vagrant Box v20200213.0.0 - CentOS 7.7.1908 (Core)&#34;</span>
+
+    centos.vm.provider <span class="s2">&#34;virtualbox&#34;</span> <span class="k">do</span> <span class="p">|</span>vb<span class="p">|</span>
+      vb.name <span class="o">=</span> <span class="s2">&#34;vagrant-centos-tutorial-repo&#34;</span>
+      vb.gui <span class="o">=</span> <span class="nb">false</span>
+      vb.cpus <span class="o">=</span> <span class="m">1</span>
+      vb.memory <span class="o">=</span> <span class="m">512</span>
+    end
+
+    centos.vm.provision <span class="s2">&#34;shell&#34;</span>, inline: <span class="s">&lt;&lt;-SHELL
+</span><span class="s">     getenforce
+</span><span class="s">     firewall-cmd --state
+</span><span class="s">     SHELL</span>
+  end
+end
+</code></pre></div><p>Executo uma teste de validação de sintaxe. Importante.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">vagrant validate
+</code></pre></div><p>O resultado do comando acima precisa ser <code>Vagrantfile validated successfully.</code></p>
+<p>Agora é só executar o comando <code>vagrant up</code>.</p>
+<p>Abaixo o resultado da execução do comando acima.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-private-vagrant-repository.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-private-vagrant-repository.png"
+        alt="Imagem 01"/></a></span><span class="caption"><span class="title">Screenshot da execução do comando vagrant up</span></span></span></p>
+<p>Só sucesso. Nas próximas execuções dessa Box não será mais necessário baixar a imagem do repositório, porque a Box já foi importada para o repositório local. Esse fluxo pode ser comparado as imagens Docker.</p>
+<h4 id="versionando-as-boxes-">Versionando as Boxes</h4>
+<p>Então, para versionar as Boxes é simples, basta seguir o mesmo fluxo que fiz neste artigo, porém, acrescentar mais um subdiretório com a nova versão da Boxe e acrescentar.</p>
+<p>Digamos que precisei adicionar o serviço <code>ntpd</code> na Box, para quando alguém baixar e executar o serviço já esteja instalado e devidamente configurado. Sendo assim, seguindo a regra do <code>Versionamento Semântico</code> a imagem será versionada como <code>20200213.1.0</code>. Lembre-se que falei dessa nomenclatura mais acima.</p>
+<p>A estrutura de diretórios agora está da seguinte forma:</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">/var/www/html/vagrant/
+├── boxes
+│   └── centos-base-image
+│       ├── v20200213.0.0
+│       │   ├── centos-base-image.box
+│       │   └── centos-base-image.box.sha256
+│       └── v20200213.1.0
+│           ├── centos-base-image.box
+│           └── centos-base-image.box.sha256
+└── index.json
+
+<span class="m">4</span> directories, <span class="m">5</span> files
+</code></pre></div><p>E o arquivo <code>index.json</code> ficará da seguinte forma:</p>
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;centos-base-image&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;This box contains CentOS 7.7.1908 (Core) 64-bit.&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;versions&#34;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&#34;version&#34;</span><span class="p">:</span> <span class="s2">&#34;20200213.0.0&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;providers&#34;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">{</span>
+            <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;virtualbox&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;url&#34;</span><span class="p">:</span> <span class="s2">&#34;http://repo.meudominio.local/boxes/centos-base-image/v20200213.0.0/centos-base-image.box&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum_type&#34;</span><span class="p">:</span> <span class="s2">&#34;sha256&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum&#34;</span><span class="p">:</span> <span class="s2">&#34;55dbddadfa7f169e569898bcfcef44c5cec3d679bf53fc0634fdcb2d11074700&#34;</span>
+          <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span><span class="p">,</span><span class="p">{</span>
+        <span class="nt">&#34;version&#34;</span><span class="p">:</span> <span class="s2">&#34;20200213.1.0&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;providers&#34;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">{</span>
+            <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;virtualbox&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;url&#34;</span><span class="p">:</span> <span class="s2">&#34;http://repo.meudominio.local/boxes/centos-base-image/v20200213.1.0/centos-base-image.box&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum_type&#34;</span><span class="p">:</span> <span class="s2">&#34;sha256&#34;</span><span class="p">,</span>
+            <span class="nt">&#34;checksum&#34;</span><span class="p">:</span> <span class="s2">&#34;55dbddadfa7f169e569898bcfcef44c5cec3d679bf53fc0634fdcb2d11031456&#34;</span>
+          <span class="p">}</span><span class="p">]</span>
+    <span class="p">}</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><blockquote>
+<p>É normal que a partir do momento em que vamos incrementando dados no arquivo <code>index.json</code> os requisitos de abrir e fechar <code>}</code> e <code>]</code> fiquem confusos. Para checar a sintaxe, utilizo um serviço web sensacional chamado <a href="https://jsonformatter.curiousconcept.com/#"title="Link de acesso ao site do serviço mencionado"target="_blank">JSON formatter &amp; Validator</a> que fazer um lint detalhado no conteúdo do arquivo JSON</p>
+</blockquote>
+<p>Quando chamo no browser obtenho o seguinte.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-private-vagrant-repository.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-private-vagrant-repository.png"
+        alt="Imagem 02"/></a></span><span class="caption"><span class="title">Imagem com a visualização do repositório no brownser</span></span></span></p>
+<p>O &ldquo;pulo do gato&rdquo; aqui é o valor boleano da linha abaixo&hellip;</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">centos.vm.box_check_update <span class="o">=</span> <span class="nb">true</span>
+</code></pre></div><p>&hellip; que por estar <code>true</code> fará com que o Vagrantfile, no momento da execução do <code>vagrant up</code>, busque no repositório por atualizações e quando houver irá automaticamente executar o download da Box.</p>
+<p>Missão cumprida. Analise se essa solução é útil pra você e em caso positivo desejo bom uso.</p>
+<p>Abraço!</p>
+</article><section class="article labels"><a class="category" href=/categories/vagrant/>vagrant</a><a class="tag" href=/tags/vagrant/>vagrant</a><a class="tag" href=/tags/apache/>apache</a></section><section class="article navigation"><p><a class="link" href="/post/vagrant-box-customized/"><span class="li">&rarr;</span>Criando sua própria Vagrant Box para o VirtualBox</a class="link">
+    </p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 Ewerton Silva.</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>
