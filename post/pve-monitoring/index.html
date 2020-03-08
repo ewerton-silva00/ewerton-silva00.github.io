@@ -153,6 +153,16 @@
 <h4 id="criando-um-dashboard-no-grafana-">Criando um dashboard no Grafana</h4>
 <p>Acesse o endereço <code>grafana.meudominio.local</code>, informe <code>grafana</code> como usuário e <code>grafana</code> para senha. Em <code>Add data source</code> selecione o <code>Prometheus</code> e no campo <code>URL</code> informe <code>http://prometheus:9090</code>.</p>
 <p>Na sequência importe o dashboard <code>pve_monitoring.json</code> disponível como arquivo no repositório baixado.</p>
+<p>Com isso temos o seguinte:</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-pve-monitoring.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/00-screenshot-pve-monitoring.png"
+        alt="Imagem 00"/></a></span><span class="caption"><span class="title">Visão do PVE Node</span></span></span></p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-pve-monitoring.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/01-screenshot-pve-monitoring.png"
+        alt="Imagen 01"/></a></span><span class="caption"><span class="title">Visão dos Guests</span></span></span></p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-pve-monitoring.png"><img class="img" src="https://raw.githubusercontent.com/ewerton-silva00/blog-sysadmin-linux/master/static/images/02-screenshot-pve-monitoring.png"
+        alt="Imagen 02"/></a></span><span class="caption"><span class="title">Visão da utilizaçao de recursos dos guests</span></span></span></p>
 <p>Chegamos então no fim deste artigo. Agora você já possui o norte que faltava para desenvolver uma stack de monitoração.</p>
 <p>Essa stack pode ficar ainda mais robusta, adicionando os <code>receivers</code>, que são os alvos das notificações, como por exemplo: Rocketchat, Slack, Telegram, E-mail&hellip;</p>
 <p>Em ambientes maiores e mais complexos podemos integrar o Prometheus à um serviço de <code>Service Discovery</code>, como por exemplo o <strong>Consul</strong>. As possibilidades são inúmeras.</p>
