@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.64.1" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Monitoramento do Proxmox Virtual Environment (PVE) com Prometheus&nbsp;&ndash;&nbsp;Ewerton Silva</title><link rel="stylesheet" href="/css/core.min.3a6a7ee40924e66a058442d11843d6fbb5cb58f03e94fdd9991fed82c0f7abc3a41a2443ab9b4b0d27feb2dc16a98e81.css" integrity="sha384-Omp&#43;5Akk5moFhELRGEPW&#43;7XLWPA&#43;lP3ZmR/tgsD3q8OkGiRDq5tLDSf&#43;stwWqY6B"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Ewerton Silva</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Feito por um SysAdmin Linux</span></div></section><div id="content"><section class="article header">
+    <h1 class="article title">Monitoramento do Proxmox Virtual Environment (PVE) com Prometheus</h1><p class="article date">Saturday, March 7, 2020</p></section><article class="article markdown-body"><p>Neste artigo estarei dando início à uma série sobre monitoramento com Prometheus e para iniciar quero mostrar como provisionar uma stack simples para monitorar o <code>Proxmox Virtual Environment (PVE)</code>, pois o utilizo bastante para provisionar minhas VMs de estudo.</p>
+<p>O <a href="https://prometheus.io/"title="Link de acesso ao site oficial do Prometheus"target="_blank">Prometheus</a> é um sistema de monitoramento open-source desenvolvido pela <a href="https://soundcloud.com/"title="Link de acesso ao site oficial da SoundCloud"target="_blank">SoundCloud</a> e que hoje é graduado pela <a href="https://www.cncf.io/"title="Link para acesso ao site oficial da CNCF"target="_blank">Cloud Native Computing Foundation</a>.</p>
+<p>O <a href="https://www.cncf.io/"title="Link de acesso ao site oficial do PVE"target="_blank">Proxmox Virtual Environment</a> é uma plataforma open-source de virtualização. Pra mim, o melhor projeto open-source de virtualização.</p>
+<p>Para continuarmos, preciso que você já estude ou trabalhe com as ferramentas abordadas aqui, pois não irei me aprofundar em cada uma delas. Meu objetivo é te proporcionar um norte nessa jornada sobre monitoramento do PVE.</p>
+<h4 id="criando-um-usuário-específico-para-monitoramento-no-pve-">Criando um usuário específico para monitoramento no PVE</h4>
+<p>Seguindo a primeira boa prática, criaremos um usuário somente leitura chamado <code>prometheus</code> na qual terá a role <strong>PVEAuditor</strong>. O objetivo desse usuário é somente ter acesso as metricas do PVE.</p>
+<p>Conectado via SSH como <strong>root</strong> no host PVE, utilize o utilitário &lsquo;&lsquo;pveum&rsquo;&rsquo; para criar o usuário em questão.</p>
+<p>Crie um grupo chamado <code>Monitoring Group</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">pveum group add monitoring -comment <span class="s1">&#39;Monitoring Group&#39;</span>
+</code></pre></div><p>Conceda a permissão <code>PVEAuditor</code> ao grupo criado.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">pveum aclmod / -group monitoring -role PVEAuditor
+</code></pre></div><p>Agora crie o usuário <code>prometheus</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">pveum user add prometheus@pam
+</code></pre></div><p>Adicione o usuário no grupo <code>monitoring</code>. Dessa forma ele herdará a role <code>PVEAuditor</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">pveum usermod prometheus@pam -group monitoring
+</code></pre></div><p>Finalize essa parte criando uma senha para o usuário <code>prometheus</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">pveum passwd prometheus@pam
+</code></pre></div><h4 id="instalando-o-exporter-">Instalando o Exporter</h4>
+<p>Para que o Prometheus colete as métricas do PVE utilizaremos um <a href="https://prometheus.io/docs/instrumenting/exporters/"title="Link de acesso ao site do Prometheus contendo informações sobre exporters"target="_blank">exporter</a> na qual conversa com a API do hypervisor e exporte as métricas num formato na qual o Prometheus conheça.</p>
+<p>Utilizaremos um exporter sensacional escrito em Python, desenvolvido pelo usuário <a href="https://github.com/znerol"title="Link para acesso ao perfil do desenvolvedor no Github"target="_blank">znreol</a>. O cara mandou muito bem. <a href="https://github.com/znerol/prometheus-pve-exporter"title="Link de acesso ao repositório do projeto no Github"target="_blank">Clique aqui</a> para conferir o projeto no Github.</p>
+<p>Ainda conectado via SSH no host PVE com o usuário <strong>root</strong> execute os passos abaixo.</p>
+<p>Instale o <a href="https://pypi.org/project/pip/"title="Link de acesso ao site oficial do PyPip"target="_blank">pip</a>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">apt install python-pip -y
+</code></pre></div><p>Na sequência, instale o <a href="https://virtualenv.pypa.io/en/latest/"title="Link de acesso ao site da documentação do virtualenv"target="_blank">virtualenv</a>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">pip install virtualenv
+</code></pre></div><p>Crie um ambiente Python isolado para instalarmos o exporter.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">virtualenv /opt/prometheus-pve-exporter
+</code></pre></div><p>Agora sim instale o exporter com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">/opt/prometheus-pve-exporter/bin/pip install prometheus-pve-exporter
+</code></pre></div><p>O resultado do comando acima precisa ser semelhante ao resultado abaixo.</p>
+<pre><code>Successfully installed Werkzeug-1.0.0 certifi-2019.11.28 chardet-3.0.4 idna-2.9 prometheus-client-0.7.1 prometheus-pve-exporter-1.1.2 proxmoxer-1.0.4 pyyaml-5.3 requests-2.23.0 urllib3-1.25.8
+</code></pre><p>Crie o arquivo <code>/etc/prometheus/pve.yml</code> com o seguinte conteúdo:</p>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="k">default</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">  </span><span class="k">user</span><span class="p">:</span><span class="w"> </span>prometheus@pam<span class="w">
+</span><span class="w">  </span><span class="k">password</span><span class="p">:</span><span class="w"> </span>8JJ7te6zepQnO74Jt2urc1VkxXPsTG<span class="w">
+</span><span class="w">  </span><span class="k">verify_ssl</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></code></pre></div><ul>
+<li><strong>user</strong>: usuário criado nos passos acima com permissão <code>PVEAudit</code>.</li>
+<li><strong>password:</strong> senha atribuída ao usuário <code>prometheus@pam</code>.</li>
+<li><strong>verify_ssl</strong>: parâmetro para ignorar erros devido a certificados não reconhecidos.</li>
+</ul>
+<p>Crie o usuário <code>exporter</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">useradd --user-group --no-create-home --shell /sbin/nologin --comment <span class="s2">&#34;Prometheus Exporter&#34;</span> exporter
+</code></pre></div><p>Crie o arquivo <code>/etc/systemd/system/pve_exporter.service</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>Unit<span class="o">]</span>
+<span class="nv">Description</span><span class="o">=</span>Prometheus Exporter <span class="k">for</span> Proxmox VE
+<span class="nv">Documentation</span><span class="o">=</span>https://github.com/znerol/prometheus-pve-exporter
+<span class="nv">Wants</span><span class="o">=</span>network-online.target
+<span class="nv">After</span><span class="o">=</span>network-online.target
+
+<span class="o">[</span>Service<span class="o">]</span>
+<span class="nv">Type</span><span class="o">=</span>simple
+
+<span class="nv">User</span><span class="o">=</span>exporter
+<span class="nv">Group</span><span class="o">=</span>exporter
+
+<span class="nv">ExecStart</span><span class="o">=</span>/opt/prometheus-pve-exporter/bin/pve_exporter /etc/prometheus/pve.yml
+
+<span class="nv">Restart</span><span class="o">=</span>on-failure
+
+<span class="o">[</span>Install<span class="o">]</span>
+<span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
+</code></pre></div><p>Recarregue as configurações do systemd.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">systemctl daemon-reload
+</code></pre></div><p>Habilite o serviço para ser inicializado no boot do sistema operacional, mas que também o execute de imediato.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">systemctl <span class="nb">enable</span> --now pve_exporter.service
+</code></pre></div><p>Confira se ficou tudo OK com o serviço executando o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">systemctl status pve_exporter.service
+</code></pre></div><p>Por padrão, o serviço do exporter utiliza a porta <code>9122/tcp</code>.</p>
+<p>Lembrando que todo o processo realizado acima pode ser automatizado com o uso do <a href="https://docs.ansible.com/"title="Link de acesso a documentação oficial do Ansible"target="_blank">Ansible</a>,  por exemplo. Principalmente quando você suporta vários nós PVE.</p>
+<h4 id="configurando-o-prometheus-">Configurando o Prometheus</h4>
+<p>Toda a stack de monitoramento que utilizo roda sob containers <a href="https://www.docker.com/"title="Link para acesso ao site oficial do Docker"target="_blank">Docker</a>, com isso você precisa possuir algum conhecimento sobre.</p>
+<p>Faça o clone do meu repositório contendo os arquivos necessários para execução do Prometheus.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">git clone https://github.com/ewerton-silva00/pve-monitoring.git
+</code></pre></div><p>O diretório <code>pve-monitoring</code> possui a seguinte estrutura.</p>
+<pre><code>../monitoring-pve
+├── alertmanager
+│   └── alertmanager.yml
+├── docker-compose.yml
+├── prometheus
+│   ├── alerts.yml
+│   └── prometheus.yml
+├── pve_monitoring.json
+└── README.md
+
+2 directories, 6 files
+</code></pre><p>No arquivo <code>prometheus.yml</code> você definirá os targets, ou seja, os hosts PVE na qual você quer monitorar.</p>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="w">  </span>- <span class="k">job_name</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;pve&#39;</span><span class="w">
+</span><span class="w">    </span><span class="k">metrics_path</span><span class="p">:</span><span class="w"> </span>/pve<span class="w">
+</span><span class="w">    </span><span class="k">params</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">      </span><span class="k">module</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>default<span class="p">]</span><span class="w">
+</span><span class="w">    </span><span class="k">static_configs</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">      </span>- <span class="k">targets</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;pve.meudominio.local:9221&#39;</span><span class="p">]</span><span class="w">
+</span><span class="w">        </span><span class="k">labels</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">          </span><span class="k">costumer</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;blog&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">environment</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;desenvolvimento&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">hostname</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;pve.meudominio.local&#39;</span><span class="w">
+</span></code></pre></div><p>Perceba que os hosts monitorados são definidos na sessão <code>scrape_configs</code> e no exemplo acima, o host que estou definindo para ser monitorado se chama <code>pve.meudominio.local</code>.</p>
+<p>Veja também que defino três <code>labels</code> para esse <code>job_name</code>. Isso facilita no momento em que precisamos elaborar as <code>queries</code> para extração de métricas, pois posso executar sempre as mesmas queries com o detalhe de que os resultados variam de acordo com as labels definidas. Útil também para estabelecer uma distinção entre os ambientes à serem monitorados e prioridade dos alertas.</p>
+<p>Para saber mais, indico fortemente a leitura da documentação oficial do Prometheus, pois o que estou mostrando aqui é somente o básico.</p>
+<h4 id="inicializando-a-stack-de-monitoramento">Inicializando a stack de monitoramento</h4>
+<p>Por que <strong>stack</strong>?</p>
+<p>Aqui serão executados vários containers/serviços, uns conversando com os outros.</p>
+<ul>
+<li><strong>Traefik</strong>: esse serviço será responsável pelo proxy reverso. Assim evitaremos ficar acessando os serviços via IP + Porta.</li>
+<li><strong>Prometheus</strong>: como já mencionado, esse serviço é o coração de toda a stack. Ele quem irá coletar e processar todas as métricas.</li>
+<li><strong>AlertManager</strong>: esse serviço será responsável pelos alertas, ou seja, nele definimos como, quando e para onde as notificações são enviadas.</li>
+<li><strong>Grafana</strong>: nesse serviço criamos os dashboards para acompanhamento visual do nosso cenário monitorado.</li>
+</ul>
+<p>Crie uma network chamada <code>public_network</code>. Será nessa network que o <strong>traefik</strong> conversará com os demais containers que serão acessados via proxy.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">docker network create public_network
+</code></pre></div><p>Agora, adicione no seu <code>/etc/hosts</code> o seguinte conteúdo:</p>
+<pre><code>127.0.0.1 traefik.meudominio.local
+127.0.0.1 prometheus.meudominio.local
+127.0.0.1 alertmanager.meudominio.local
+127.0.0.1 grafana.meudominio.local
+</code></pre><p>Inicialize a stack com o comando abaixo.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">docker-compose up --detach
+</code></pre></div><blockquote>
+<p>O arquivo <code>docker-compose.yml</code> está adaptado para ser executado apenas como ambiente de estudos, por isso não há volumes criados.</p>
+<p>Caso necessite, basta criar os volumes para persistência dos dados.</p>
+</blockquote>
+<p>Feito! Com os containers em execução, basta chamar no browser o nome dos serviços e começar a brincadeira.</p>
+<p>No meu exemplo, posso chamar no browser o endereço <code>http://pve.meudominio.local:9221/pve?target=localhost</code> para ter uma idéia de como as métricas são modeladas para o Prometheus.</p>
+<p>No Prometheus, confira na aba <code>Status / Targets </code> se o endpoint do PVE está com o status <code>UP</code>.</p>
+<p>No arquivo <code>alerts.yml</code> definimos as regras para os alertas. Aqui no nosso exemplo criei apenas dois na qual notifica quando um exporter está down e quando uma VM também fica down.</p>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml">- <span class="k">name</span><span class="p">:</span><span class="w"> </span>PVEAlerts<span class="w">
+</span><span class="w">  </span><span class="k">rules</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">  </span>- <span class="k">alert</span><span class="p">:</span><span class="w"> </span>PVEGuestDown<span class="w">
+</span><span class="w">    </span><span class="k">expr</span><span class="p">:</span><span class="w"> </span>sum<span class="w"> </span>by<span class="w"> </span>(costumer<span class="p">,</span><span class="w"> </span>environment<span class="p">,</span><span class="w"> </span>hostname<span class="p">,</span><span class="w"> </span>id)<span class="w"> </span>(pve_up{environment=<span class="s2">&#34;desenvolvimento&#34;</span>}<span class="w">  </span>==<span class="w"> </span><span class="m">0</span>)<span class="w">
+</span><span class="w">    </span><span class="k">for</span><span class="p">:</span><span class="w"> </span>2m<span class="w">
+</span><span class="w">    </span><span class="k">labels</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">      </span><span class="k">severity</span><span class="p">:</span><span class="w"> </span>high<span class="w">
+</span><span class="w">    </span><span class="k">annotations</span><span class="p">:</span><span class="w">
+</span><span class="w"></span><span class="w">      </span><span class="k">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;A VM de id {{ $labels.id }} encontra-se indisponível.&#34;</span><span class="w">
+</span><span class="w">      </span><span class="k">description</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;VM indisponível no PVE {{ $labels.hostname }}, no ambiente de {{ $labels.environment }} do cliente {{ $labels.costumer }}.&#34;</span><span class="w">
+</span></code></pre></div><blockquote>
+<p>No caso acima o alerta só irá funcionar quando o ambiente for de desenvolvimento. Apenas exemplo.</p>
+</blockquote>
+<h4 id="criando-um-dashboard-no-grafana-">Criando um dashboard no Grafana</h4>
+<p>Acesse o endereço <code>grafana.meudominio.local</code>, informe <code>grafana</code> como usuário e <code>grafana</code> para senha. Em <code>Add data source</code> selecione o <code>Prometheus</code> e no campo <code>URL</code> informe <code>http://prometheus:9090</code>.</p>
+<p>Na sequência importe o dashboard <code>pve_monitoring.json</code> disponível como arquivo no repositório baixado.</p>
+<p>Chegamos então no fim deste artigo. Agora você já possui o norte que faltava para desenvolver uma stack de monitoração.</p>
+<p>Essa stack pode ficar ainda mais robusta, adicionando os <code>receivers</code>, que são os alvos das notificações, como por exemplo: Rocketchat, Slack, Telegram, E-mail&hellip;</p>
+<p>Em ambientes maiores e mais complexos podemos integrar o Prometheus à um serviço de <code>Service Discovery</code>, como por exemplo o <strong>Consul</strong>. As possibilidades são inúmeras.</p>
+<p>Obrigado por ter lido este artigo. Sucesso!</p>
+</article><section class="article labels"><a class="category" href=/categories/proxmox/>proxmox</a><a class="tag" href=/tags/proxmox/>proxmox</a><a class="tag" href=/tags/prometheus/>prometheus</a></section><section class="article navigation"><p><a class="link" href="/post/private-vagrant-repository/"><span class="li">&rarr;</span>Provisionando um repositório privado para Vagrant Boxes</a class="link">
+    </p></section><section class="article discussion"><div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "ewerton-silva" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 Ewerton Silva.</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>

@@ -7,10 +7,21 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>pt-BR</language>
     <copyright>©2020 Ewerton Silva.</copyright>
-    <lastBuildDate>Thu, 13 Feb 2020 23:42:32 -0300</lastBuildDate>
+    <lastBuildDate>Sat, 07 Mar 2020 15:14:32 -0300</lastBuildDate>
     
         <atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Monitoramento do Proxmox Virtual Environment (PVE) com Prometheus</title>
+      <link>/post/pve-monitoring/</link>
+      <pubDate>Sat, 07 Mar 2020 15:14:32 -0300</pubDate>
+      
+      <guid>/post/pve-monitoring/</guid>
+      <description>Neste artigo estarei dando início à uma série sobre monitoramento com Prometheus e para iniciar quero mostrar como provisionar uma stack simples para monitorar o Proxmox Virtual Environment (PVE), pois o utilizo bastante para provisionar minhas VMs de estudo.
+O Prometheus é um sistema de monitoramento open-source desenvolvido pela SoundCloud e que hoje é graduado pela Cloud Native Computing Foundation.
+O Proxmox Virtual Environment é uma plataforma open-source de virtualização. Pra mim, o melhor projeto open-source de virtualização.</description>
+    </item>
     
     <item>
       <title>Provisionando um repositório privado para Vagrant Boxes</title>
